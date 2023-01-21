@@ -22,6 +22,7 @@ const Home: NextPage = () => {
   const [sideBySide, setSideBySide] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string | null>(null);
+  const [model, setModel] = useState<Img2ImgModel | null>(null);
   const fileSelectRef = useRef<HTMLInputElement>(null);
 
   const FileSelector = () => (
@@ -60,10 +61,14 @@ const Home: NextPage = () => {
   async function generatePhoto(fileData: ArrayBuffer) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setLoading(true);
-    const result = await ImageModel.create("superres-compressed-x4");
-    console.log(`Model loaded in ${result.elapsed} seconds.`);
-    const model = result.model as Img2ImgModel;
-    const restored = await model.process(fileData, 300);
+    let instance = model;
+    if (instance === null) {
+      const result = await ImageModel.create("superres-compressed-x4");
+      console.log(`Model loaded in ${result.elapsed} seconds.`);
+      instance = result.model as Img2ImgModel;
+      setModel(instance);
+    }
+    const restored = await instance.process(fileData, 300);
     console.log(`Photo restored in ${restored.elapsed} seconds.`);
     const renderCanvas = document.createElement("canvas");
     renderCanvas.width = restored.data.width;
@@ -85,7 +90,7 @@ const Home: NextPage = () => {
       <Header />
       <main className="flex flex-1 w-full flex-col items-center justify-center text-center px-4 mt-4 sm:mb-0 mb-8">
         <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold tracking-normal text-slate-900 sm:text-6xl mb-5">
-          Restore any photo
+          Restore low-quality photos right in your browser
         </h1>
         <p className="text-slate-500">
           The process may take a couple of minutes. Please be patient.
