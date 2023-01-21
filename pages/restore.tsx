@@ -63,8 +63,7 @@ const Home: NextPage = () => {
     const result = await ImageModel.create("superres-compressed-x4");
     console.log(`Model loaded in ${result.elapsed} seconds.`);
     const model = result.model as Img2ImgModel;
-    // @ts-ignore
-    const restored = await model.process(fileData);
+    const restored = await model.process(fileData, 300);
     console.log(`Photo restored in ${restored.elapsed} seconds.`);
     const renderCanvas = document.createElement("canvas");
     renderCanvas.width = restored.data.width;
