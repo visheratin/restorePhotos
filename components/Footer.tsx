@@ -6,12 +6,12 @@ export default function Footer() {
       <div>
         Powered by{" "}
         <a
-          href="https://replicate.com/"
+          href="https://github.com/visheratin/web-ai/"
           target="_blank"
           rel="noreferrer"
           className="font-bold hover:underline transition underline-offset-2"
         >
-          Replicate{" "}
+          Web AI{" "}
         </a>
         and{" "}
         <a
@@ -25,7 +25,7 @@ export default function Footer() {
       </div>
       <div className="flex space-x-4 pb-4 sm:pb-0">
         <Link
-          href="https://twitter.com/nutlope"
+          href="https://twitter.com/visheratin"
           className="group"
           aria-label="TaxPal on Twitter"
         >
@@ -37,7 +37,7 @@ export default function Footer() {
           </svg>
         </Link>
         <Link
-          href="https://github.com/Nutlope/restorePhotos"
+          href="https://github.com/visheratin/restorePhotos"
           className="group"
           aria-label="TaxPal on GitHub"
         >

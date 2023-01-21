@@ -2,10 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CountUp from "react-countup";
-import { UploadDropzone } from "react-uploader";
-import { Uploader } from "uploader";
 import { CompareSlider } from "../components/CompareSlider";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -14,19 +12,7 @@ import ResizablePanel from "../components/ResizablePanel";
 import Toggle from "../components/Toggle";
 import appendNewToName from "../utils/appendNewToName";
 import downloadPhoto from "../utils/downloadPhoto";
-
-// Configuration for the uploader
-const uploader = Uploader({
-  apiKey: !!process.env.NEXT_PUBLIC_UPLOAD_API_KEY
-    ? process.env.NEXT_PUBLIC_UPLOAD_API_KEY
-    : "free",
-});
-const options = {
-  maxFileCount: 1,
-  mimeTypes: ["image/jpeg", "image/png", "image/jpg"],
-  editor: { images: { crop: false } },
-  styles: { colors: { primary: "#000" } },
-};
+import { ImageModel, Img2ImgModel } from "@visheratin/web-ai";
 
 const Home: NextPage = () => {
   const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
@@ -36,40 +22,50 @@ const Home: NextPage = () => {
   const [sideBySide, setSideBySide] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string | null>(null);
+  const fileSelectRef = useRef<HTMLInputElement>(null);
 
-  const UploadDropZone = () => (
-    <UploadDropzone
-      uploader={uploader}
-      options={options}
-      onUpdate={(file) => {
-        if (file.length !== 0) {
-          setPhotoName(file[0].originalFile.originalFileName);
-          setOriginalPhoto(file[0].fileUrl.replace("raw", "thumbnail"));
-          generatePhoto(file[0].fileUrl.replace("raw", "thumbnail"));
-        }
-      }}
-      width="670px"
-      height="250px"
-    />
+  const FileSelector = () => (
+    <div>
+      <input
+        className="w-full bg-black rounded-full text-white font-medium px-4 pt-2 pb-3 mt-8 hover:bg-black/80 w-90"
+        type="file"
+        ref={fileSelectRef}
+        onChange={processImage}
+      />
+    </div>
   );
 
-  async function generatePhoto(fileUrl: string) {
+  const processImage = () => {
+    if (
+      fileSelectRef.current &&
+      fileSelectRef.current.files &&
+      fileSelectRef.current.files[0]
+    ) {
+      var reader = new FileReader();
+      reader.onload = async () => {
+        setPhotoName(fileSelectRef.current.files[0].name);
+        setOriginalPhoto(URL.createObjectURL(fileSelectRef.current.files[0]));
+        generatePhoto(reader.result as ArrayBuffer);
+      };
+      reader.readAsArrayBuffer(fileSelectRef.current.files[0]);
+    }
+  };
+
+  async function generatePhoto(fileData: ArrayBuffer) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setLoading(true);
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ imageUrl: fileUrl }),
-    });
-
-    let newPhoto = await res.json();
-    if (res.status !== 200) {
-      setError(newPhoto);
-    } else {
-      setRestoredImage(newPhoto);
-    }
+    const result = await ImageModel.create("superres-compressed-x4");
+    console.log(`Model loaded in ${result.elapsed} seconds.`);
+    const model = result.model as Img2ImgModel;
+    const restored = await model.process(fileData);
+    console.log(`Photo restored in ${restored.elapsed} seconds.`);
+    const renderCanvas = document.createElement("canvas");
+    renderCanvas.width = restored.data.width;
+    renderCanvas.height = restored.data.height;
+    const renderCtx = renderCanvas.getContext("2d");
+    renderCtx!.putImageData(restored.data, 0, 0);
+    const imgData = renderCanvas.toDataURL("image/png");
+    setRestoredImage(imgData);
     setLoading(false);
   }
 
@@ -92,13 +88,10 @@ const Home: NextPage = () => {
           <span className="font-semibold">my newsletter</span>.
         </a>
         <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold tracking-normal text-slate-900 sm:text-6xl mb-5">
-          Restore any face photo
+          Restore any photo
         </h1>
         <p className="text-slate-500">
-          {" "}
-          {/* Obtained this number from Vercel: based on how many serverless invocations happened. Can automate later */}
-          <CountUp start={30000} end={85092} duration={2} separator="," />{" "}
-          photos generated and counting.
+          The process may take a couple of minutes. Please be patient.
         </p>
         <ResizablePanel>
           <AnimatePresence exitBeforeEnter>
@@ -114,7 +107,7 @@ const Home: NextPage = () => {
                   restored={restoredImage!}
                 />
               )}
-              {!originalPhoto && <UploadDropZone />}
+              {!originalPhoto && <FileSelector />}
               {originalPhoto && !restoredImage && (
                 <Image
                   alt="original photo"
