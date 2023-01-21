@@ -43,9 +43,15 @@ const Home: NextPage = () => {
     ) {
       var reader = new FileReader();
       reader.onload = async () => {
-        setPhotoName(fileSelectRef.current.files[0].name);
-        setOriginalPhoto(URL.createObjectURL(fileSelectRef.current.files[0]));
-        generatePhoto(reader.result as ArrayBuffer);
+        if (
+          fileSelectRef.current &&
+          fileSelectRef.current.files &&
+          fileSelectRef.current.files[0]
+        ) {
+          setPhotoName(fileSelectRef.current.files[0].name);
+          setOriginalPhoto(URL.createObjectURL(fileSelectRef.current.files[0]));
+          generatePhoto(reader.result as ArrayBuffer);
+        }
       };
       reader.readAsArrayBuffer(fileSelectRef.current.files[0]);
     }
@@ -57,6 +63,7 @@ const Home: NextPage = () => {
     const result = await ImageModel.create("superres-compressed-x4");
     console.log(`Model loaded in ${result.elapsed} seconds.`);
     const model = result.model as Img2ImgModel;
+    // @ts-ignore
     const restored = await model.process(fileData);
     console.log(`Photo restored in ${restored.elapsed} seconds.`);
     const renderCanvas = document.createElement("canvas");
