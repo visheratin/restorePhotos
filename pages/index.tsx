@@ -70,15 +70,19 @@ const Home: NextPage = () => {
     }
     const restored = await instance.process(fileData, 300);
     console.log(`Photo restored in ${restored.elapsed} seconds.`);
-    const renderCanvas = document.createElement("canvas");
-    renderCanvas.width = restored.data.width;
-    renderCanvas.height = restored.data.height;
-    const renderCtx = renderCanvas.getContext("2d");
-    renderCtx!.putImageData(restored.data, 0, 0);
-    const imgData = renderCanvas.toDataURL("image/png");
+    const imgData = renderRestored(restored.data);
     setRestoredImage(imgData);
     setLoading(false);
   }
+
+  const renderRestored = (data: ImageData): string => {
+    const renderCanvas = document.createElement("canvas");
+    renderCanvas.width = data.width;
+    renderCanvas.height = data.height;
+    const renderCtx = renderCanvas.getContext("2d");
+    renderCtx!.putImageData(data, 0, 0);
+    return renderCanvas.toDataURL("image/png");
+  };
 
   return (
     <div className="flex max-w-6xl mx-auto flex-col items-center justify-center py-2 min-h-screen">
